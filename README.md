@@ -23,24 +23,26 @@ Exchanger представляет собой GUI, написанный на QT,
 
 CREATE DATABASE имя;
 
-CREATE TABLE users
-id bigint not null (primary key)
-username varchar(50) not null
-rub real
-usd real
-psw varchar(18)
+CREATE TABLE users(
+  id bigserial not null primary key,
+  username varchar(50) not null,
+  rub real,
+  usd real,
+  psw varchar(18)
+);
 
-CREATE TABLE bids
-id bigint(NOT NULL)
-id_user bigint (NOT NULL)
-bid_type varchar(4) (NOT NULL)
-value real (NOT NULL)
-price real (NOT NULL)
-id_deal_with bigint 
-showed bool
-date timestamp without time zone
-remain_value real (NOT NULL)
-
+CREATE TABLE bids(
+  id bigserial not null primary key,
+  id_user bigserial not null,
+  bid_type varchar(4) not null,
+  value real not null,
+  price real not null,
+  status varchar(20),
+  id_deal_with bigserial,
+  showed bool,
+  date timestamp without time zone,
+  remain_value real not null
+);
 
 
 
