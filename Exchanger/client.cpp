@@ -67,13 +67,15 @@ int main(int argc, char *argv[])
 // Отправка сообщения на сервер по шаблону.
 void SendMessage(
     tcp::socket& aSocket,
-    const std::string& aRequestType,
-    const std::string& aMessage)
+    nlohmann::json& req
+//    const std::string& aRequestType,
+//    const std::string& aMessage
+        )
 {
-    nlohmann::json req;
+//    nlohmann::json req;
     req["UserId"] = id;
-    req["ReqType"] = aRequestType;
-    req["Message"] = aMessage;
+//    req["ReqType"] = aRequestType;
+//    req["Message"] = aMessage;
     std::string request = req.dump();
     boost::lock_guard<boost::mutex> lock(global_stream_lock);
     boost::asio::write(aSocket, boost::asio::buffer(request, request.size()));
@@ -100,6 +102,41 @@ std::string ReadMessage(tcp::socket& aSocket)
     return line;
 }
 
+//void ShowBids(
+//    tcp::socket& aSocket,
+//    const std::string& aRequestType,
+//    const std::string& aShowType)
+//{
+//    nlohmann::json req;
+//    req["UserId"] = id;
+//    req["ReqType"] = aRequestType;
+//    req["ShowType"] = aShowType;
+
+//    std::string request = req.dump();
+//    boost::asio::write(aSocket, boost::asio::buffer(request, request.size()));
+//}
+
+// "Создаём" пользователя, получаем его ID.
+bool ProcessRegistration(const std::string& aLogin, const std::string& aPass)
+{
+    nlohmann::json req;
+    req["ReqType"] = Requests::Registration;
+    req["Login"] = aLogin;
+    req["Pass"] = aPass;
+
+    SendMessage(s, req);
+//    std::string request = req.dump();
+//    boost::asio::write(s, boost::asio::buffer(request, request.size()));
+
+    // Для регистрации Id не нужен, заполним его нулём
+
+    std::string response = ReadMessage(s);
+    if (response.find("Wrong") == std::string::npos) {
+        id = response;
+        return true;
+    } else return false;
+}
+
 void SendBid(
     const std::string& aBidType,
     const std::string& aBidValue,
@@ -112,12 +149,13 @@ void SendBid(
     req["BidValue"] = aBidValue;
     req["BidPrice"] = aBidPrice;
 
-    std::string request = req.dump();
-    boost::asio::write(s, boost::asio::buffer(request, request.size()));
+//    std::string request = req.dump();
+//    boost::asio::write(s, boost::asio::buffer(request, request.size()));
+    SendMessage(s, req);
     std::string response = ReadMessage(s);
-    if(!response.empty()) {
-        boost::split(answerSendBid, response, boost::is_any_of(","), boost::token_compress_on);
-    }
+//    if(!response.empty()) {
+//        boost::split(answerSendBid, response, boost::is_any_of(","), boost::token_compress_on);
+//    }
 }
 
 void RejectBid(const std::string& aId)
@@ -125,75 +163,53 @@ void RejectBid(const std::string& aId)
     nlohmann::json req;
     req["ReqType"] = Requests::RejectBid;
     req["BidId"] = aId;
-
-    std::string request = req.dump();
-    boost::asio::write(s, boost::asio::buffer(request, request.size()));
+    SendMessage(s, req);
+    std::string response = ReadMessage(s);
+//    std::string request = req.dump();
+//    boost::asio::write(s, boost::asio::buffer(request, request.size()));
 }
 
 void ShowQuotes(tcp::socket& aSocket)
 {
     while(true){
+        boost::this_thread::sleep(boost::posix_time::seconds( 5 ));
+        if(!authorization) continue;
+
         nlohmann::json req;
         req["ReqType"] = Requests::ShowQuotes;
-        std::string request = req.dump();
-        global_stream_lock.lock();
-        boost::asio::write(aSocket, boost::asio::buffer(request, request.size()));
-        global_stream_lock.unlock();
+        SendMessage(aSocket, req);
+//        std::string request = req.dump();
+//        global_stream_lock.lock();
+//        boost::asio::write(aSocket, boost::asio::buffer(request, request.size()));
+//        global_stream_lock.unlock();
 
         // Функция должна получать 5 заявок покупки и 5 заявок продажи по минимальным ценам
         std::string response = ReadMessage(aSocket);
-        if(!response.empty()) {
+        if(!response.empty() && response != "NULL") {
             boost::split(quotes, response, boost::is_any_of(","), boost::token_compress_on);
         }
-        boost::this_thread::sleep(boost::posix_time::seconds( 5 ));
+
     }
-}
-
-void ShowBids(
-    tcp::socket& aSocket,
-    const std::string& aRequestType,
-    const std::string& aShowType)
-{
-    nlohmann::json req;
-    req["UserId"] = id;
-    req["ReqType"] = aRequestType;
-    req["ShowType"] = aShowType;
-
-    std::string request = req.dump();
-    boost::asio::write(aSocket, boost::asio::buffer(request, request.size()));
-}
-
-// "Создаём" пользователя, получаем его ID.
-bool ProcessRegistration(const std::string& aLogin, const std::string& aPass)
-{
-    nlohmann::json req;
-    req["ReqType"] = Requests::Registration;
-    req["Login"] = aLogin;
-    req["Pass"] = aPass;
-
-    std::string request = req.dump();
-    boost::asio::write(s, boost::asio::buffer(request, request.size()));
-
-    // Для регистрации Id не нужен, заполним его нулём
-
-    std::string response = ReadMessage(s);
-    if (response.find("Wrong") == std::string::npos) {
-        id = response;
-        return true;
-    } else return false;
 }
 
 void GetData(tcp::socket& aSocket){
     while(true){
+        boost::this_thread::sleep(boost::posix_time::seconds( 5 ));
         if(!authorization) continue;
+
         try{
-            // TODO: parser
-            SendMessage(aSocket, Requests::GetData, "");
+            nlohmann::json req;
+            req["ReqType"] = Requests::GetData;
+            SendMessage(aSocket, req);
             std::string srub = "";
             std::string susd = "";
-            std::string msg = ReadMessage(aSocket);
+            std::string response = ReadMessage(aSocket);
+
+            // TODO: parser
+
+            if(response == "NULL") continue;
             bool writeRub = true;
-            for(auto&& c : msg)
+            for(auto&& c : response)
             {
                 if (c == 'r') continue;
                 if (c == 'd') {
@@ -205,7 +221,6 @@ void GetData(tcp::socket& aSocket){
             }
             rub = srub;
             usd = susd;
-            boost::this_thread::sleep(boost::posix_time::seconds( 1 ));
         }
         catch (std::exception& e)
         {
@@ -217,18 +232,20 @@ void GetData(tcp::socket& aSocket){
 // Асинхронный вызов
 void CheckExecutedBids(tcp::socket& aSocket){
     while(true){
+        boost::this_thread::sleep(boost::posix_time::seconds( 5 ));
+        if(!authorization) continue;
         try{
-            SendMessage(aSocket, Requests::CheckExecBids, "");
+            nlohmann::json req;
+            req["ReqType"] = Requests::CheckExecBids;
+            SendMessage(aSocket, req);
             std::string response = ReadMessage(aSocket);
-            std::cout << "RESPONSE: " << response << std::endl;
-            if(response != " ") {
+            if(response != " " && response != "NULL") {
                 std::vector<std::string> toCout;
                 std::cout << "response: " << response << std::endl;
                 boost::split(toCout, response, boost::is_any_of(","), boost::token_compress_on);
                 pullExecBids.push_back(toCout);
                 idsExecBids.push_back(toCout.at(0));
             }
-            boost::this_thread::sleep(boost::posix_time::seconds( 5 ));
         }
         catch (std::exception& e)
         {
@@ -237,16 +254,19 @@ void CheckExecutedBids(tcp::socket& aSocket){
     }
 }
 
-// Получениеe активных заявок
+// Получениe активных заявок
 // Асинхронный вызов
 void CheckActiveBids(tcp::socket& aSocket){
     while(true){
-        if(!authorization) continue;
+        boost::this_thread::sleep(boost::posix_time::seconds( 5 ));
+        if(!authorization) continue;        
         try{
-            SendMessage(aSocket, Requests::CheckActiveBids, "");
+            nlohmann::json req;
+            req["ReqType"] = Requests::CheckActiveBids;
+            SendMessage(aSocket, req);
             std::string response = ReadMessage(aSocket);
             pullActiveBids.clear();
-            if(response != " ") {
+            if(response != " " && response != "NULL") {
                 std::vector<std::string> fullResponse;
                 boost::split(fullResponse, response, boost::is_any_of(";"), boost::token_compress_on);
                 std::vector<std::string> toCout;
@@ -255,8 +275,7 @@ void CheckActiveBids(tcp::socket& aSocket){
                     pullActiveBids.push_back(toCout);
                     idsActiveBids.push_back(toCout.at(0));
                 }
-            }
-            boost::this_thread::sleep(boost::posix_time::seconds( 5 ));
+            }            
         }
         catch (std::exception& e)
         {

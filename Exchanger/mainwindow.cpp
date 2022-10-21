@@ -15,8 +15,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     if(authorization) ui->setupUi(this);
 
-    ui->scrollAreaActiveQuotes->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    ui->scrollAreaActiveQuotes->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+//    ui->scrollAreaActiveQuotes->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &MainWindow::updateLabels);
     updateLabels();
@@ -34,6 +33,8 @@ void MainWindow::updateQuotesWindows(){
 //        delete item;
 //    }
 
+
+    std::cout << "Окно выполненных заявок пользователя" << std::endl;
     // Окно выполненных заявок пользователя
     if(!pullExecBids.empty()){
         for (auto&& push : pullExecBids) { //берем результаты запроса
@@ -43,6 +44,7 @@ void MainWindow::updateQuotesWindows(){
         }
     }
 
+    std::cout << "Удаление исполненных заявок из пулла активных заявок" << std::endl;
     // Удаление исполненных заявок из пулла активных заявок
     for(auto&& activeId : idsActiveBids){
         for(auto&& execId : idsExecBids){
@@ -55,12 +57,16 @@ void MainWindow::updateQuotesWindows(){
         }
     }
 
+
+    std::cout << "Очистка окна активных заявок перед обновлением" << std::endl;
     // Очистка окна активных заявок перед обновлением
     while (QLayoutItem* item = ui->LayoutActiveQuotes->takeAt(0)) {
         delete item->widget();
         delete item;
     }
 
+
+    std::cout << "Окно активных заявок пользователя" << std::endl;
     // Окно активных заявок пользователя
     if(!pullActiveBids.empty()){
         for (auto&& push : pullActiveBids) { //берем результаты запроса
@@ -77,6 +83,8 @@ void MainWindow::updateLabels(){
     ui->labelShowRub->setText(QString::fromStdString(rub));
     ui->labelShowUsd->setText(QString::fromStdString(usd));
 
+
+    std::cout << "quotes.size()= " << quotes.size() << std::endl;
     // Обновление котировок
     ui->buyQuote_1->setText(QString::fromStdString(quotes.at(0)));
     ui->buyQuote_2->setText(QString::fromStdString(quotes.at(1)));
@@ -99,13 +107,13 @@ void MainWindow::on_buyButton_clicked()
 {
     if(!ui->buyValue->text().isEmpty() && !ui->buyCost->text().isEmpty()){
         SendBid("buy", ui->buyValue->text().toStdString(), ui->buyCost->text().toStdString());
-        std::string message = "Заявка: " + answerSendBid.at(0)
-                + "\nТип: " + answerSendBid.at(1)
-                + "\nОбъём: " + answerSendBid.at(2)
-                + "\nЦена: " + answerSendBid.at(3)
-                + "\nСтатус: " + answerSendBid.at(4);
-        answerSendBid.clear();
-        QMessageBox::information(this, "Успешно", QString::fromStdString(message));
+//        std::string message = "Заявка: " + answerSendBid.at(0)
+//                + "\nТип: " + answerSendBid.at(1)
+//                + "\nОбъём: " + answerSendBid.at(2)
+//                + "\nЦена: " + answerSendBid.at(3)
+//                + "\nСтатус: " + answerSendBid.at(4);
+//        answerSendBid.clear();
+        QMessageBox::information(this, "Успешно", "Ваша заявка размещена");
     }else QMessageBox::warning(this, "Ошибка", "Проверьте правильность введённых данных");
 }
 
@@ -113,13 +121,13 @@ void MainWindow::on_sellButton_clicked()
 {
     if(!ui->sellValue->text().isEmpty() && !ui->sellCost->text().isEmpty()){
         SendBid("sell", ui->sellValue->text().toStdString(), ui->sellCost->text().toStdString());
-        std::string message = "Заявка: " + answerSendBid.at(0)
-                + "\nТип: " + answerSendBid.at(1)
-                + "\nОбъём: " + answerSendBid.at(2)
-                + "\nЦена: " + answerSendBid.at(3)
-                + "\nСтатус: " + answerSendBid.at(4);
-        answerSendBid.clear();
-        QMessageBox::information(this, "Успешно", QString::fromStdString(message));
+//        std::string message = "Заявка: " + answerSendBid.at(0)
+//                + "\nТип: " + answerSendBid.at(1)
+//                + "\nОбъём: " + answerSendBid.at(2)
+//                + "\nЦена: " + answerSendBid.at(3)
+//                + "\nСтатус: " + answerSendBid.at(4);
+//        answerSendBid.clear();
+        QMessageBox::information(this, "Успешно", "Ваша заявка размещена");
     }else QMessageBox::warning(this, "Ошибка", "Проверьте правильность введённых данных");
 }
 

@@ -71,54 +71,17 @@ public:
         return std::string(response["id"].c_str());
     }
 
-    // Запрос имени клиента по ID
-    std::string GetUserName(const std::string& aUserId)
-    {
-/*        const auto userIt = mUsers.find(std::stoi(aUserId));
-        if (userIt == mUsers.cend())
-        {
-            return "Error! Unknown User";
-        }
-        else
-        {
-            return userIt->second;
-        }*/
-    	std::cout << "Name : TODO" << std::endl;
-    	return "Name";
-    }
-    // Запрос списка пользователей
-    std::string GetUsers()
-    {
-    	/*
-    		    pqxx::result response = tx.exec("SELECT * FROM users");
-    			for (size_t i = 0; i < response.size(); i++)
-    			{
-    				std::cout << "Id: " << response[i][0] << " Username: " << response[i][1] << " Password: " << response[i][2] << " Email: " << response[i][3] << std::endl;
-    			}
-    	*/
-
-    	std::cout << "Users: TODO" << std::endl;
-    	return "List";
-    }
-
     // Регистрация заявки на покупку/продажу
-    std::string Bid(const std::string& aId, const std::string& aBidType,
+    void/*std::string*/ Bid(const std::string& aId, const std::string& aBidType,
     		const std::string& aBidValue, const std::string& aBidPrice)
     {
-    	// TODO: Логика размещения заявки.
-
-    	/*
-    	 insert into bids (id_user, bid_type, value, price, status)
-							values (
-							1, 'buy', 5, 55, 'active');
-    	 *
-    	 */
-		pqxx::row response;
+//		pqxx::row response;
 		try{
 			//start_worker{
 			pqxx::work tx{c};
 
-			response = tx.exec1(
+//			response = tx.exec1(
+            tx.exec0(
 					"INSERT INTO bids (id_user, bid_type, value, remain_value, price, status, id_deal_with, showed, date) "
 					"VALUES ("
 					+ aId + ", "
@@ -130,21 +93,22 @@ public:
 					+ " 0, "
 					+ " false, "
 					+ " now() "
-					") RETURNING id, bid_type, value, price, status;"
+                        ");"
+//					") RETURNING id, bid_type, value, price, status;"
 					);
 			tx.commit();
 			//end_worker}
 
-			return std::string(response["id"].c_str())
-					+ "," + response["bid_type"].c_str()
-					+ "," + response["value"].c_str()
-					+ "," + response["price"].c_str()
-					+ "," + response["status"].c_str();
+//			return std::string(response["id"].c_str())
+//					+ "," + response["bid_type"].c_str()
+//					+ "," + response["value"].c_str()
+//					+ "," + response["price"].c_str()
+//					+ "," + response["status"].c_str();
 		}
 		catch (std::exception& e)
 		{
 			std::cerr << "Exception: " << e.what() << "\n";
-			return "";
+//			return "";
 		}
     }
 
@@ -215,50 +179,6 @@ public:
 			return "";
 		}
     }
-
-
-    // Просмотр заявок
-    std::string ShowBids(const std::string& aId, const std::string& aShowType)
-    {
-    	std::string toReturn = "";
-    	pqxx::result response;
-
-		try{
-			//start_worker{
-			pqxx::work tx{c};
-			if(aShowType == "my"){
-				response = tx.exec(
-						"SELECT id, bid_type, value, price, status FROM bids WHERE id_user = " + aId + " ORDER BY status;"
-						);
-			}
-			else{
-				response = tx.exec(
-						"SELECT id, bid_type, value, price FROM bids WHERE id_user != " + aId + " and status = 'active' ORDER BY price;"
-						);
-			}
-			tx.commit();
-			//end_worker}
-
-
-			for (auto && row : response)
-			{
-				toReturn += std::string("\nid of bid: ") + row["id"].c_str()
-							+ "; Bid Type: " + row["bid_type"].c_str()
-							+ "; Value: " + row["value"].c_str()
-							+ "; Price: " + row["price"].c_str();
-				if(aShowType == "my") toReturn += std::string("; Status: ") + row["status"].c_str();
-			}
-
-			return toReturn;
-		}
-		catch (std::exception& e)
-		{
-			std::cerr << "Exception: " << e.what() << "\n";
-			return "ERROR Show";
-		}
-    }
-
-
 
     std::map <int,int> pullIdsForCheckBids;
 	// Проверка выполненных заявок
@@ -392,7 +312,7 @@ public:
             auto j = nlohmann::json::parse(data_);
             auto reqType = j["ReqType"];
 
-            std::string reply = "Error! Unknown request type";
+            std::string reply = "NULL";
             if (reqType == Requests::Registration)
             {
                 // Это реквест на регистрацию пользователя.
@@ -402,25 +322,20 @@ public:
 
             else if (reqType == Requests::Bid)
             {
-            	//TODO заявка на покупку/продажу
-
-        		reply = GetCore().Bid(j["UserId"], j["BidType"], j["BidValue"], j["BidPrice"]);
+                // Заявка на покупку/продажу
+                GetCore().Bid(j["UserId"], j["BidType"], j["BidValue"], j["BidPrice"]);
+//        		reply = GetCore().Bid(j["UserId"], j["BidType"], j["BidValue"], j["BidPrice"]);
             }
             else if (reqType == Requests::RejectBid)
             {
-            	//TODO заявка на покупку/продажу
+                // Отмена заявки
 
         		GetCore().RejectBid(j["BidId"]);
             }
             else if (reqType == Requests::ShowQuotes)
             {
-            	// показать список заявок
-            	reply = GetCore().ShowQuotes();
-            }
-            else if (reqType == Requests::ShowBids)
-            {
-            	// показать список заявок
-            	reply = GetCore().ShowBids(j["UserId"], j["ShowType"]);
+                // Показать котировки
+                reply = GetCore().ShowQuotes();
             }
             else if (reqType == Requests::CheckExecBids)
             {
