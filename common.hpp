@@ -4,13 +4,11 @@
 #include <string>
 
 static short port = 8828;
-static std::string conn_set = "host=localhost port=5432 dbname=BDExchange user=postgres password =qwerty";
+static std::string conn_set = "host=localhost port=5432 dbname=checkbefore user=postgres password =qwerty";
 
 namespace Requests
 {
     static std::string Registration = "Reg";
-    static std::string Hello = "Hel";
-    static std::string ShowOnline = "Shw";
     static std::string Bid = "Bid";
     static std::string RejectBid = "RjB";
     static std::string ShowQuotes = "ShQ";
